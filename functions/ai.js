@@ -58,10 +58,12 @@ console.log('imageUrlForRunway:', imageUrlForRunway);
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            model: 'gen3a_turbo',
-            promptText: prompt,
-            promptImage: imageUrlForRunway, // Using the new R2 URL
-        }),
+  model: 'gen4_turbo',           // or gen3a_turbo
+  promptText: prompt,
+  promptImage: imageUrlForRunway,
+  ratio: '1280:720',             // valid for Gen‑4
+  duration: 5                    // e.g., 5 seconds
+  }),
       });
       
       const data = await response.json();
