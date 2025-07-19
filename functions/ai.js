@@ -68,7 +68,7 @@ export async function onRequest(context) {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,          
-          'X-Runway-Version': '2024-11-06', // 'X-Runway-Version': '2024-03-01',  //    'X-Runway-Version': '2024-09-13',  
+          'X-Runway-API-Version': '2024-05-15', // 'X-Runway-Version': '2024-03-01',  //    'X-Runway-Version': '2024-09-13',  
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -110,7 +110,7 @@ export async function onRequest(context) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,// 
-           'X-Runway-Version': '2024-11-06',
+          'X-Runway-API-Version': '2024-05-15',  // 'X-Runway-Version': '2024-11-06',
         },
       });
 

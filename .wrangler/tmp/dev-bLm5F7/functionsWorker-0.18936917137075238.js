@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// .wrangler/tmp/bundle-bh5lxN/checked-fetch.js
+// .wrangler/tmp/bundle-riCzv7/checked-fetch.js
 var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
@@ -88,6 +88,16 @@ async function onRequest(context) {
       console.log("imageFile:", imageFile?.name, imageFile?.type);
       console.log("R2 key:", key);
       console.log("imageUrlForRunway:", imageUrlForRunway);
+      const model = "gen4_turbo";
+      const ratio = "1280:720";
+      const duration = 5;
+      console.log("Payload to Runway:", {
+        model,
+        promptText: prompt,
+        promptImage: imageUrlForRunway,
+        ratio,
+        duration
+      });
       const response = await fetch("https://api.runwayml.com/v1/image_to_video", {
         method: "POST",
         headers: {
@@ -97,23 +107,13 @@ async function onRequest(context) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "gen4_turbo",
-          // or gen3a_turbo
+          model,
           promptText: prompt,
           promptImage: imageUrlForRunway,
-          ratio: "1280:720",
-          // valid for Gen‑4
-          duration: 5
-          // e.g., 5 seconds
+          ratio,
+          duration
         })
       });
-      console.log("Payload to Runway:", JSON.stringify({
-        model,
-        promptText: prompt,
-        promptImage: imageUrlForRunway,
-        ratio,
-        duration
-      }));
       const data = await response.json();
       if (!response.ok) {
         console.error("RunwayML API returned error:", data);
@@ -133,7 +133,7 @@ async function onRequest(context) {
         headers: {
           "Authorization": `Bearer ${env.RUNWAYML_API_KEY}`,
           // 
-          "X-Runway-Version": "2024-09-13"
+          "X-Runway-Version": "2024-11-06"
         }
       });
       const data = await statusResponse.json();
@@ -843,7 +843,7 @@ var jsonError2 = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default2 = jsonError2;
 
-// .wrangler/tmp/bundle-bh5lxN/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-riCzv7/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__2 = [
   middleware_ensure_req_body_drained_default2,
   middleware_miniflare3_json_error_default2
@@ -875,7 +875,7 @@ function __facade_invoke__2(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__2, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-bh5lxN/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-riCzv7/middleware-loader.entry.ts
 var __Facade_ScheduledController__2 = class ___Facade_ScheduledController__2 {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
