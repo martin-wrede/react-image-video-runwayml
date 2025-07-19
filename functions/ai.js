@@ -54,7 +54,7 @@ console.log('imageUrlForRunway:', imageUrlForRunway);
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,          //  
-            'X-Runway-Version': '2024-09-13',  
+            'X-Runway-Version': '2024-03-01',  //    'X-Runway-Version': '2024-09-13',  
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
