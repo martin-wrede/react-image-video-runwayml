@@ -31,45 +31,40 @@ export async function onRequest(context) {
         throw new Error('FormData is missing the required "prompt" or "image" field.');
       }
 
-      // 1. Create a unique filename for R2
       const key = `uploads/${Date.now()}-${imageFile.name}`;
-
-      // 2. Upload the image file to your R2 bucket
       await env.IMAGE_BUCKET.put(key, imageFile.stream(), {
         httpMetadata: { contentType: imageFile.type },
       });
 
-      // 3. Get the public URL automatically from the binding
       const publicBucketUrl = env.IMAGE_BUCKET.publicUrl;
       const imageUrlForRunway = `${publicBucketUrl}/${key}`;
+      
+      // --- START: MODIFICATIONS FOR GEN-3 API ---
 
-      // --- START: MODIFICATIONS FOR RUNWAYML v2 API ---
-
-      // Define values based on the correct API schema
-      const model = 'gen4_turbo'; // Your desired model
-      const duration_seconds = 4; // Use 'duration_seconds'
+      // 1. Correct the model name to a valid Gen-3 model
+      const model = 'gen3a_turbo'; //  <--- FIX #1: Changed from gen4_turbo
+      const duration_seconds = 4;
 
       console.log('Payload to Runway:', {
         model,
-        prompt: prompt, // Use 'prompt' instead of 'promptText'
-        init_image_url: imageUrlForRunway, // Use 'init_image_url' instead of 'promptImage'
-        duration_seconds, // Use 'duration_seconds' instead of 'duration'
+        prompt: prompt,
+        init_image_url: imageUrlForRunway,
+        duration_seconds,
       });
 
-      // 4. Call the RunwayML API with the correct headers and payload
+      // 2. Call the RunwayML API with the correct header and payload
       const response = await fetch('https://api.runwayml.com/v2/image-to-video', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
           'Content-Type': 'application/json',
-          // REMOVED: 'x-runway-api-version' header is not needed for this v2 endpoint
+          'x-runway-api-version': '2024-05-15', // <--- FIX #2: Re-added this required header
         },
         body: JSON.stringify({
           model,
-          prompt: prompt, // CORRECT KEY
-          init_image_url: imageUrlForRunway, // CORRECT KEY
-          duration_seconds, // CORRECT KEY
-          // REMOVED: 'ratio' is not a valid parameter here; it's inferred from the image
+          prompt,
+          init_image_url: imageUrlForRunway,
+          duration_seconds,
         }),
       });
 
@@ -77,11 +72,10 @@ export async function onRequest(context) {
 
       const data = await response.json();
       if (!response.ok) {
-        console.error('RunwayML API returned error:', data);
+        console.error('RunwayML API Error:', response.status, response.statusText, data);
         throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
       }
 
-      // Success! Return the task ID to the frontend
       return new Response(JSON.stringify({ success: true, taskId: data.id, status: data.status }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
@@ -97,8 +91,6 @@ export async function onRequest(context) {
         throw new Error('Invalid action or missing taskId for JSON request.');
       }
 
-      // The status check endpoint is different and might still use older conventions or v1.
-      // We will check the status of a v2 task using the v1 endpoint, which is correct.
       const statusResponse = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, {
         method: 'GET',
         headers: {
@@ -117,7 +109,7 @@ export async function onRequest(context) {
         success: true,
         status: data.status,
         progress: data.progress,
-        videoUrl: data.output?.url || null, // The output URL is in 'output.url'
+        videoUrl: data.output?.url || null,
         failure: data.failure || null,
       }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }

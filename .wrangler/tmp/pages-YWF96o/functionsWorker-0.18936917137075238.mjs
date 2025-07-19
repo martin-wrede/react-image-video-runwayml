@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// ../.wrangler/tmp/bundle-MPo5ZH/checked-fetch.js
+// ../.wrangler/tmp/bundle-YcSjUA/checked-fetch.js
 var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
@@ -57,38 +57,32 @@ async function onRequest(context) {
       });
       const publicBucketUrl = env.IMAGE_BUCKET.publicUrl;
       const imageUrlForRunway = `${publicBucketUrl}/${key}`;
-      const model = "gen4_turbo";
+      const model = "gen3a_turbo";
       const duration_seconds = 4;
       console.log("Payload to Runway:", {
         model,
         prompt,
-        // Use 'prompt' instead of 'promptText'
         init_image_url: imageUrlForRunway,
-        // Use 'init_image_url' instead of 'promptImage'
         duration_seconds
-        // Use 'duration_seconds' instead of 'duration'
       });
       const response = await fetch("https://api.runwayml.com/v2/image-to-video", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${env.RUNWAYML_API_KEY}`,
-          "Content-Type": "application/json"
-          // REMOVED: 'x-runway-api-version' header is not needed for this v2 endpoint
+          "Content-Type": "application/json",
+          "x-runway-api-version": "2024-05-15"
+          // <--- FIX #2: Re-added this required header
         },
         body: JSON.stringify({
           model,
           prompt,
-          // CORRECT KEY
           init_image_url: imageUrlForRunway,
-          // CORRECT KEY
           duration_seconds
-          // CORRECT KEY
-          // REMOVED: 'ratio' is not a valid parameter here; it's inferred from the image
         })
       });
       const data = await response.json();
       if (!response.ok) {
-        console.error("RunwayML API returned error:", data);
+        console.error("RunwayML API Error:", response.status, response.statusText, data);
         throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
       }
       return new Response(JSON.stringify({ success: true, taskId: data.id, status: data.status }), {
@@ -116,7 +110,6 @@ async function onRequest(context) {
         status: data.status,
         progress: data.progress,
         videoUrl: data.output?.url || null,
-        // The output URL is in 'output.url'
         failure: data.failure || null
       }), {
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
@@ -760,7 +753,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-MPo5ZH/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-YcSjUA/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -792,7 +785,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-MPo5ZH/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-YcSjUA/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
