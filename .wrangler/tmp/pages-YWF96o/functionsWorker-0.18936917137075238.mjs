@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// ../.wrangler/tmp/bundle-XBfxoa/checked-fetch.js
+// ../.wrangler/tmp/bundle-iQ7pf6/checked-fetch.js
 var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
@@ -80,6 +80,13 @@ async function onRequest(context) {
           // e.g., 5 seconds
         })
       });
+      console.log("Payload to Runway:", JSON.stringify({
+        model,
+        promptText: prompt,
+        promptImage: imageUrlForRunway,
+        ratio,
+        duration
+      }));
       const data = await response.json();
       if (!response.ok) {
         console.error("RunwayML API returned error:", data);
@@ -633,7 +640,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-XBfxoa/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-iQ7pf6/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -665,7 +672,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-XBfxoa/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-iQ7pf6/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
