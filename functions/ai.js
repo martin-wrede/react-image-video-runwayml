@@ -46,10 +46,22 @@ export async function onRequest(context) {
       const imageUrlForRunway = `${publicBucketUrl}/${key}`;
 
        console.log('prompt:', prompt);
-console.log('imageFile:', imageFile?.name, imageFile?.type);
-console.log('R2 key:', key);
-console.log('imageUrlForRunway:', imageUrlForRunway);
+        console.log('imageFile:', imageFile?.name, imageFile?.type);
+        console.log('R2 key:', key);
+        console.log('imageUrlForRunway:', imageUrlForRunway);
 
+        // Define values
+        const model = 'gen4_turbo';
+        const ratio = '1280:720';
+        const duration = 5;
+
+        console.log('Payload to Runway:', {
+          model,
+          promptText: prompt,
+          promptImage: imageUrlForRunway,
+          ratio,
+          duration
+        });
 
       // 4. Call the RunwayML API with the new public image URL
       const response = await fetch('https://api.runwayml.com/v1/image_to_video', {
@@ -60,20 +72,14 @@ console.log('imageUrlForRunway:', imageUrlForRunway);
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-        model: 'gen4_turbo',           // or gen3a_turbo
+        model,
         promptText: prompt,
         promptImage: imageUrlForRunway,
-        ratio: '1280:720',             // valid for Gen‑4
-        duration: 5                    // e.g., 5 seconds
+        ratio,
+        duration,
         }),
       });
-      console.log('Payload to Runway:', JSON.stringify({
-  model,
-  promptText: prompt,
-  promptImage: imageUrlForRunway,
-  ratio,
-  duration
-}));
+     
       const data = await response.json();
       if (!response.ok) {
          console.error('RunwayML API returned error:', data);
@@ -104,7 +110,7 @@ console.log('imageUrlForRunway:', imageUrlForRunway);
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,// 
-          'X-Runway-Version': '2024-09-13',
+           'X-Runway-Version': '2024-11-06',
         },
       });
 
