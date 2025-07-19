@@ -45,6 +45,10 @@ export async function onRequest(context) {
       const publicBucketUrl = env.IMAGE_BUCKET.publicUrl;
       const imageUrlForRunway = `${publicBucketUrl}/${key}`;
 
+       console.log('prompt:', prompt);
+console.log('imageFile:', imageFile?.name, imageFile?.type);
+console.log('R2 key:', key);
+console.log('imageUrlForRunway:', imageUrlForRunway);
       // 4. Call the RunwayML API with the new public image URL
       const response = await fetch('https://api.runwayml.com/v1/image_to_video', {
         method: 'POST',
@@ -71,10 +75,7 @@ export async function onRequest(context) {
       });
 
     } 
-    console.log('prompt:', prompt);
-console.log('imageFile:', imageFile?.name, imageFile?.type);
-console.log('R2 key:', key);
-console.log('imageUrlForRunway:', imageUrlForRunway);
+   
 
     // --- B. HANDLE TASK STATUS CHECK ---
     else if (contentType.includes('application/json')) {
