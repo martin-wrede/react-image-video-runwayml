@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// ../.wrangler/tmp/bundle-WlhLSC/checked-fetch.js
+// ../.wrangler/tmp/bundle-MPo5ZH/checked-fetch.js
 var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
@@ -140,6 +140,121 @@ async function onRequest(context) {
 }
 __name(onRequest, "onRequest");
 
+// ai copy.js
+async function onRequest2(context) {
+  const { request, env } = context;
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    });
+  }
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+  try {
+    const contentType = request.headers.get("content-type") || "";
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const prompt = formData.get("prompt");
+      const imageFile = formData.get("image");
+      if (!prompt || !imageFile) {
+        throw new Error('FormData is missing the required "prompt" or "image" field.');
+      }
+      const key = `uploads/${Date.now()}-${imageFile.name}`;
+      await env.IMAGE_BUCKET.put(key, imageFile.stream(), {
+        httpMetadata: { contentType: imageFile.type }
+      });
+      const publicBucketUrl = env.IMAGE_BUCKET.publicUrl;
+      const imageUrlForRunway = `${publicBucketUrl}/${key}`;
+      console.log("prompt:", prompt);
+      console.log("imageFile:", imageFile?.name, imageFile?.type);
+      console.log("R2 key:", key);
+      console.log("imageUrlForRunway:", imageUrlForRunway);
+      const model = "gen4_turbo";
+      const ratio = "1280:720";
+      const duration = 5;
+      console.log("Payload to Runway:", {
+        model,
+        promptText: prompt,
+        promptImage: imageUrlForRunway,
+        ratio,
+        duration
+      });
+      const response = await fetch("https://api.runwayml.com/v2/image-to-video", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${env.RUNWAYML_API_KEY}`,
+          "X-Runway-API-Version": "2024-05-15",
+          // 'X-Runway-Version': '2024-03-01',  //    'X-Runway-Version': '2024-09-13',  
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model,
+          promptText: prompt,
+          promptImage: imageUrlForRunway,
+          ratio,
+          duration
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        console.error("RunwayML API returned error:", data);
+        throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
+      }
+      return new Response(JSON.stringify({ success: true, taskId: data.id, status: data.status }), {
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    } else if (contentType.includes("application/json")) {
+      const body = await request.json();
+      const { taskId, action } = body;
+      if (action !== "status" || !taskId) {
+        throw new Error("Invalid action or missing taskId for JSON request.");
+      }
+      const statusResponse = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${env.RUNWAYML_API_KEY}`,
+          // 
+          "x-runway-api-version": "2024-05-15"
+        }
+      });
+      const data = await statusResponse.json();
+      if (!statusResponse.ok) {
+        console.error(`Status check failed:`, statusResponse.status, data);
+        throw new Error(`Failed to check task status. API Response: ${JSON.stringify(data)}`);
+      }
+      return new Response(JSON.stringify({
+        success: true,
+        status: data.status,
+        progress: data.progress,
+        videoUrl: data.output?.[0] || null,
+        failure: data.failure || null
+      }), {
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    } else {
+      throw new Error(`Invalid request Content-Type. Expected 'multipart/form-data' or 'application/json'.`);
+    }
+  } catch (error) {
+    console.error("Error in Cloudflare Worker:", error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  }
+}
+__name(onRequest2, "onRequest");
+
 // ../.wrangler/tmp/pages-YWF96o/functionsRoutes-0.5509503716063926.mjs
 var routes = [
   {
@@ -148,6 +263,13 @@ var routes = [
     method: "",
     middlewares: [],
     modules: [onRequest]
+  },
+  {
+    routePath: "/ai copy",
+    mountPath: "/",
+    method: "",
+    middlewares: [],
+    modules: [onRequest2]
   }
 ];
 
@@ -638,7 +760,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-WlhLSC/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-MPo5ZH/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -670,7 +792,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-WlhLSC/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-MPo5ZH/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
