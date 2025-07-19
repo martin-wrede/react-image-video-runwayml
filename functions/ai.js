@@ -62,6 +62,13 @@ export async function onRequest(context) {
           ratio,
           duration
         });
+        
+        console.log('Sending headers:', {
+  'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
+  'x-runway-api-version': '2024-05-15',
+  'Content-Type': 'application/json',
+});
+
  
       // 4. Call the RunwayML API with the new public image URL  / https://api.runwayml.com/v2/image-to-video
       const response = await fetch('https://api.runwayml.com/v2/image-to-video', {
@@ -110,7 +117,7 @@ export async function onRequest(context) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,// 
-          'X-Runway-API-Version': '2024-05-15',  // 'X-Runway-Version': '2024-11-06',
+        'x-runway-api-version': '2024-05-15', 
         },
       });
 
