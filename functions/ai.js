@@ -66,8 +66,11 @@ console.log('imageUrlForRunway:', imageUrlForRunway);
       
       const data = await response.json();
       if (!response.ok) {
+         console.error('RunwayML API returned error:', data);
         throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
+        
       }
+ 
 
       // Success! Return the task ID to the frontend
       return new Response(JSON.stringify({ success: true, taskId: data.id, status: data.status }), {
