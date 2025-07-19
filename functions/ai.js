@@ -64,7 +64,7 @@ export async function onRequest(context) {
         });
 
       // 4. Call the RunwayML API with the new public image URL
-      const response = await fetch('https://api.runwayml.com/v1/image_to_video', {
+      const response = await fetch('https://api.runwayml.com/v2/image_to_video', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,          
