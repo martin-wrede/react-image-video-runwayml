@@ -89,7 +89,7 @@ const generateVideo = async () => {
 
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h2>Generate Video with RunwayML  1</h2>
+      <h2>Generate Video with RunwayML  2</h2>
       
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', marginBottom: '5px' }}>

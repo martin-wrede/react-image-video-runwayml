@@ -53,8 +53,8 @@ console.log('imageUrlForRunway:', imageUrlForRunway);
       const response = await fetch('https://api.runwayml.com/v1/image_to_video', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,          //  
-            'X-Runway-Version': '2024-03-01',  //    'X-Runway-Version': '2024-09-13',  
+          'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,          
+           'X-Runway-Version': '2024-11-06', // 'X-Runway-Version': '2024-03-01',  //    'X-Runway-Version': '2024-09-13',  
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
