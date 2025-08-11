@@ -56,7 +56,6 @@ export async function onRequest(context) {
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
           'Content-Type': 'application/json',
-          // --- FIX: Add the required header back to the generation call ---
           'X-Runway-Version': '2024-05-15', 
         },
         body: JSON.stringify(payload),
@@ -84,7 +83,6 @@ export async function onRequest(context) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
-          // --- FIX: Add the required header back to the status check call ---
           'X-Runway-Version': '2024-05-15',
         },
       });
