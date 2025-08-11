@@ -1,4 +1,4 @@
-// --- START OF FILE functions/ai.js (Final Corrected Version for Dev API) ---
+// --- START OF FILE functions/ai.js (Final Corrected Version for Header Case) ---
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -9,7 +9,7 @@ export async function onRequest(context) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Runway-Version', // Add header here for CORS
       }
     });
   }
@@ -18,7 +18,7 @@ export async function onRequest(context) {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  // --- Ensure environment variables are set ---
+  // Ensure environment variables are set
   if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET) {
     const errorMsg = 'SERVER MISCONFIGURATION: RUNWAYML_API_KEY or IMAGE_BUCKET binding is missing.';
     console.error(errorMsg);
@@ -31,7 +31,7 @@ export async function onRequest(context) {
   try {
     const contentType = request.headers.get('content-type') || '';
 
-    // --- A. HANDLE IMAGE UPLOAD & VIDEO GENERATION (This part is correct) ---
+    // --- A. HANDLE IMAGE UPLOAD & VIDEO GENERATION ---
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
       const prompt = formData.get('prompt');
@@ -60,7 +60,7 @@ export async function onRequest(context) {
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
           'Content-Type': 'application/json',
-          'x-runway-api-version': '2024-05-15',
+          'X-Runway-Version': '2024-05-15', // --- FIX: Matched the required case ---
         },
         body: JSON.stringify(payload),
       });
@@ -89,12 +89,11 @@ export async function onRequest(context) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
-          'x-runway-api-version': '2024-05-15', // --- FIX: Added the required version header ---
+          'X-Runway-Version': '2024-05-15', // --- FIX: Matched the required case here too ---
         },
       });
 
       const data = await statusResponse.json();
-
       if (!statusResponse.ok) {
         throw new Error(`Failed to check task status. API Response: ${JSON.stringify(data)}`);
       }
