@@ -215,7 +215,7 @@ export default function App() {
       )}
 
               <div style={{ marginTop: '30px', fontSize: '14px', color: '#666' }}>
-        <p><strong>Model:</strong> gen3a_turbo (via Dev API)</p>
+        <p><strong>Model:</strong>  Gen-2 (via Dev API)</p>
         <p><strong>Duration:</strong> 4 seconds</p>
       </div>
     </div>
