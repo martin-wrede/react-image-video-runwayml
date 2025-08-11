@@ -1,6 +1,9 @@
-// --- START OF FILE functions/ai.js (Final Corrected Version for Header Case) ---
+// --- START OF FILE functions/ai.js (Final Diagnostic Version 3.0) ---
 
 export async function onRequest(context) {
+  // --- THIS IS THE DIAGNOSTIC LOG ---
+  console.log("--- RUNNING AI.JS VERSION 3.0 (Header Case Fix) ---"); 
+
   const { request, env } = context;
 
   // Handle CORS preflight
@@ -9,7 +12,7 @@ export async function onRequest(context) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Runway-Version', // Add header here for CORS
+        'Access-Control-Allow-Headers': 'Content-Type, X-Runway-Version',
       }
     });
   }
@@ -55,13 +58,18 @@ export async function onRequest(context) {
         watermark: false,
       };
 
+      const headers = {
+        'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
+        'Content-Type': 'application/json',
+        'X-Runway-Version': '2024-05-15',
+      };
+
+      // Log the exact headers we are about to send
+      console.log("Sending headers to Runway:", JSON.stringify(headers));
+
       const response = await fetch('https://api.dev.runwayml.com/v2/image-to-video', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
-          'Content-Type': 'application/json',
-          'X-Runway-Version': '2024-05-15', // --- FIX: Matched the required case ---
-        },
+        headers: headers,
         body: JSON.stringify(payload),
       });
 
@@ -89,7 +97,7 @@ export async function onRequest(context) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
-          'X-Runway-Version': '2024-05-15', // --- FIX: Matched the required case here too ---
+          'X-Runway-Version': '2024-05-15',
         },
       });
 
@@ -108,11 +116,9 @@ export async function onRequest(context) {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
-
     else {
       throw new Error(`Invalid Content-Type.`);
     }
-
   } catch (error) {
     console.error('Error in Cloudflare Worker:', error.message);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
