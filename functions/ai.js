@@ -1,11 +1,12 @@
-// --- START OF FILE functions/ai.js (Final Corrected Version 10.0) ---
-// 17.55
+// --- START OF FILE functions/ai.js (Final Diagnostic Version 11.0) ---
+// 18.02
+
 export async function onRequest(context) {
-  // --- This log confirms the final, correct API version is running ---
-  console.log("--- RUNNING AI.JS VERSION 10.0 (Gen-3 on Dev Host) ---"); 
+  // --- This log tests a different, older API version date ---
+  console.log("--- RUNNING AI.JS VERSION 11.0 (Testing Older Version Date: 2023-11-01) ---"); 
 
   const { request, env } = context;
-
+  
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
@@ -20,7 +21,6 @@ export async function onRequest(context) {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  // Use the environment variable, which we know is now configured correctly.
   if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET || !env.R2_PUBLIC_URL) {
     const errorMsg = 'SERVER MISCONFIGURATION: One or more required environment variables are missing.';
     console.error(errorMsg);
@@ -44,24 +44,19 @@ export async function onRequest(context) {
       
       const imageUrlForRunway = `${env.R2_PUBLIC_URL}/${key}`;
       
-      // --- THE FINAL FIX: Using the correct v2/Gen-3 payload schema ---
+      const gen2ModelId = 'a711833c-2195-4760-a292-421712a23059';
       const payload = {
-        model: 'gen3a_turbo',
-        prompt: prompt,
-        init_image_url: imageUrlForRunway,
-        duration_seconds: 4,
-        watermark: false,
+        modelId: gen2ModelId,
+        input: { prompt, image: imageUrlForRunway },
       };
-
-      console.log("Sending payload to Gen-3 v2 endpoint:", JSON.stringify(payload));
       
-      // --- THE FINAL FIX: Using the correct v2/Gen-3 endpoint ---
-      const response = await fetch('https://api.dev.runwayml.com/v2/image-to-video', {
+      const response = await fetch('https://api.dev.runwayml.com/v1/inference-jobs', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
           'Content-Type': 'application/json',
-          'X-Runway-Version': '2024-05-15', 
+          // --- THE FINAL TEST: Using a different, older version date ---
+          'X-Runway-Version': '2023-11-01', 
         },
         body: JSON.stringify(payload),
       });
@@ -69,22 +64,22 @@ export async function onRequest(context) {
       const data = await response.json();
       if (!response.ok) throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
 
-      return new Response(JSON.stringify({ success: true, taskId: data.id, status: data.status }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ success: true, taskId: data.id }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
-    // ... the status check logic remains the same and is correct
+    // ... status check logic
     else if (contentType.includes('application/json')) {
       const body = await request.json();
       const { taskId, action } = body;
       if (action !== 'status' || !taskId) throw new Error('Invalid JSON request');
       const statusResponse = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
         method: 'GET',
-        headers: { 'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`, 'X-Runway-Version': '2024-05-15' },
+        headers: { 'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`, 'X-Runway-Version': '2023-11-01' },
       });
       const data = await statusResponse.json();
       if (!statusResponse.ok) throw new Error(`Status check failed: ${JSON.stringify(data)}`);
       return new Response(JSON.stringify({
-        success: true, status: data.status, progress: data.progress / 100 || 0, // v2 tasks give progress 0-100
-        videoUrl: data.output?.url || null, failure: data.failure || null, // v2 tasks use output.url
+        success: true, status: data.status, progress: data.progress_normalized || 0,
+        videoUrl: data.output?.video_url || null, failure: data.failure || null,
       }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     } else {
       throw new Error(`Invalid Content-Type.`);
