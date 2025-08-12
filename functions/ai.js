@@ -1,100 +1,69 @@
-// 18.45 postman test
-// --- START OF FILE functions/ai.js (Final Version 12.0 - Postman Replication) ---
-
+// --- START OF FILE functions/ai.js (Final Version 13.0 - The Literal Postman Test) ---
+// 19.04
 export async function onRequest(context) {
-  // --- This log confirms we are running the definitive Postman version ---
-  console.log("--- RUNNING AI.JS VERSION 12.0 (Postman Replication) ---"); 
+  // This log confirms we are running the definitive test.
+  console.log("--- RUNNING AI.JS VERSION 13.0 (The Literal Postman Test) ---"); 
 
   const { request, env } = context;
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Runway-Version',
-      }
-    });
-  }
+  // This function will now IGNORE the incoming browser request and send a hardcoded one.
   
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
-
-  // Use the environment variable, which we know is now configured correctly.
-  if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET || !env.R2_PUBLIC_URL) {
-    const errorMsg = 'SERVER MISCONFIGURATION: One or more required environment variables are missing.';
+  if (!env.RUNWAYML_API_KEY) {
+    const errorMsg = 'SERVER MISCONFIGURATION: The RUNWAYML_API_KEY is missing.';
     console.error(errorMsg);
     return new Response(JSON.stringify({ success: false, error: errorMsg }), { status: 500 });
   }
 
   try {
-    const contentType = request.headers.get('content-type') || '';
+    // --- STEP 1: Define the EXACT data from your successful Postman test ---
+    const postmanHeaders = {
+      'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
+      'Content-Type': 'application/json',
+      'X-Runway-Version': '2024-11-06',
+    };
 
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await request.formData();
-      // Read the 'prompt' and 'image' sent by the frontend
-      const prompt = formData.get('prompt');
-      const imageFile = formData.get('image');
+    const postmanBody = {
+      model: "gen3a_turbo",
+      promptText: "A cat dancing in space",
+      promptImage: "https://martin-wrede.github.io/targetx-website/Home-03.jpg",
+      duration: 5,
+      ratio: "1280:768"
+    };
 
-      if (!prompt || !imageFile) throw new Error('Missing prompt or image.');
+    // --- STEP 2: We will try the most likely endpoint first ---
+    const endpointUrl = 'https://api.dev.runwayml.com/v1/image_to_video';
+    
+    console.log("ATTEMPTING LITERAL POSTMAN REQUEST TO:", endpointUrl);
+    console.log("HEADERS:", JSON.stringify(postmanHeaders));
+    console.log("BODY:", JSON.stringify(postmanBody));
 
-      const key = `uploads/${Date.now()}-${imageFile.name}`;
-      await env.IMAGE_BUCKET.put(key, imageFile.stream(), {
-        httpMetadata: { contentType: imageFile.type },
-      });
-      const imageUrlForRunway = `${env.R2_PUBLIC_URL}/${key}`;
-      
-      // --- THE POSTMAN FIX: Build the payload with the EXACT keys from your test ---
-      const payload = {
-        model: "gen3a_turbo",
-        promptText: prompt, // Use 'promptText' key
-        promptImage: imageUrlForRunway, // Use 'promptImage' key
-        duration: 5,
-        ratio: "1280:768"
-      };
+    const response = await fetch(endpointUrl, {
+      method: 'POST',
+      headers: postmanHeaders,
+      body: JSON.stringify(postmanBody),
+    });
 
-      console.log("Sending payload that replicates Postman:", JSON.stringify(payload));
-      
-      // --- THE POSTMAN FIX: Use the v1 endpoint that accepts this payload ---
-      const response = await fetch('https://api.dev.runwayml.com/v1/image_to_video', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
-          'Content-Type': 'application/json',
-          // --- THE POSTMAN FIX: Use the EXACT version date from your test ---
-          'X-Runway-Version': '2024-11-06', 
-        },
-        body: JSON.stringify(payload),
-      });
+    const data = await response.json();
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
-
-      return new Response(JSON.stringify({ success: true, taskId: data.id, status: data.status }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    if (!response.ok) {
+      // If this fails, the log will tell us everything.
+      console.error("LITERAL TEST FAILED. Status:", response.status);
+      throw new Error(`Runway API Error (Literal Test): ${JSON.stringify(data)}`);
     }
-    // ... status check logic must also be consistent
-    else if (contentType.includes('application/json')) {
-      const body = await request.json();
-      const { taskId, action } = body;
-      if (action !== 'status' || !taskId) throw new Error('Invalid JSON request');
-      const statusResponse = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
-          'X-Runway-Version': '2024-11-06',
-        },
-      });
-      const data = await statusResponse.json();
-      if (!statusResponse.ok) throw new Error(`Status check failed: ${JSON.stringify(data)}`);
-      return new Response(JSON.stringify({
-        success: true, status: data.status, progress: data.progress, // This endpoint gives 'progress'
-        videoUrl: data.output?.[0] || null, // This endpoint gives output as an array
-        failure: data.failure || null,
-      }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-    } else {
-      throw new Error(`Invalid Content-Type.`);
-    }
+
+    // --- STEP 3: If we reach here, the test was a SUCCESS! ---
+    console.log("LITERAL TEST SUCCEEDED!", data);
+
+    // We can't poll for status since this isn't a real request from the UI,
+    // so we will return the successful data directly.
+    return new Response(JSON.stringify({ 
+        success: true, 
+        message: "LITERAL POSTMAN TEST SUCCEEDED! The endpoint and headers are correct.",
+        runwayResponse: data 
+    }), { 
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+    });
+
   } catch (error) {
     console.error('Error in Cloudflare Worker:', error.message);
     return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500 });
