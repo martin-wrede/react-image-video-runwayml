@@ -1,4 +1,4 @@
-// --- START OF FILE functions/ai.js (Final Working Version 5.0) ---
+/// --- START OF FILE functions/ai.js (Final Working Version 5.0) ---
 
 export async function onRequest(context) {
   // --- This log confirms the final version is running ---
