@@ -1,8 +1,8 @@
-/// --- START OF FILE functions/ai.js (Final Working Version 5.0) ---
+// --- START OF FILE functions/ai.js (Final Bypass Version 6.0) ---
 
 export async function onRequest(context) {
-  // --- This log confirms the final version is running ---
-  console.log("--- RUNNING AI.JS VERSION 5.0 (Gen-2 on Dev Host WITH Header) ---"); 
+  // --- This log confirms this new bypass version is running ---
+  console.log("--- RUNNING AI.JS VERSION 6.0 (Bypass with R2_PUBLIC_URL) ---"); 
 
   const { request, env } = context;
 
@@ -20,8 +20,9 @@ export async function onRequest(context) {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET || !env.IMAGE_BUCKET.publicUrl) {
-    const errorMsg = 'SERVER MISCONFIGURATION: API key or R2 bucket binding is missing/incorrect. The R2 public URL is undefined.';
+  // --- NEW, SIMPLER CHECK: We now look for our new variable ---
+  if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET || !env.R2_PUBLIC_URL) {
+    const errorMsg = 'SERVER MISCONFIGURATION: One or more required environment variables (RUNWAYML_API_KEY, R2_PUBLIC_URL) or the IMAGE_BUCKET binding is missing.';
     console.error(errorMsg);
     return new Response(JSON.stringify({ success: false, error: errorMsg }), { status: 500 });
   }
@@ -40,8 +41,11 @@ export async function onRequest(context) {
       await env.IMAGE_BUCKET.put(key, imageFile.stream(), {
         httpMetadata: { contentType: imageFile.type },
       });
-      const imageUrlForRunway = `${env.IMAGE_BUCKET.publicUrl}/${key}`;
       
+      // --- THE BYPASS: We construct the URL manually from our new variable ---
+      const imageUrlForRunway = `${env.R2_PUBLIC_URL}/${key}`;
+      console.log("Constructed image URL:", imageUrlForRunway);
+
       const gen2ModelId = 'a711833c-2195-4760-a292-421712a23059';
       const payload = {
         modelId: gen2ModelId,
@@ -63,12 +67,11 @@ export async function onRequest(context) {
 
       return new Response(JSON.stringify({ success: true, taskId: data.id }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
+    // ... (the rest of the status check logic remains the same)
     else if (contentType.includes('application/json')) {
       const body = await request.json();
       const { taskId, action } = body;
-
       if (action !== 'status' || !taskId) throw new Error('Invalid JSON request');
-      
       const statusResponse = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
         method: 'GET',
         headers: {
@@ -76,16 +79,11 @@ export async function onRequest(context) {
           'X-Runway-Version': '2024-05-15',
         },
       });
-
       const data = await statusResponse.json();
       if (!statusResponse.ok) throw new Error(`Status check failed: ${JSON.stringify(data)}`);
-
       return new Response(JSON.stringify({
-        success: true,
-        status: data.status,
-        progress: data.progress_normalized || 0,
-        videoUrl: data.output?.video_url || null,
-        failure: data.failure || null,
+        success: true, status: data.status, progress: data.progress_normalized || 0,
+        videoUrl: data.output?.video_url || null, failure: data.failure || null,
       }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     } else {
       throw new Error(`Invalid Content-Type.`);
