@@ -1,12 +1,12 @@
-// --- START OF FILE functions/ai.js (Final Diagnostic Version 11.0) ---
-// 18.02
+// 18.45 postman test
+// --- START OF FILE functions/ai.js (Final Version 12.0 - Postman Replication) ---
 
 export async function onRequest(context) {
-  // --- This log tests a different, older API version date ---
-  console.log("--- RUNNING AI.JS VERSION 11.0 (Testing Older Version Date: 2023-11-01) ---"); 
+  // --- This log confirms we are running the definitive Postman version ---
+  console.log("--- RUNNING AI.JS VERSION 12.0 (Postman Replication) ---"); 
 
   const { request, env } = context;
-  
+
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
@@ -21,6 +21,7 @@ export async function onRequest(context) {
     return new Response('Method not allowed', { status: 405 });
   }
 
+  // Use the environment variable, which we know is now configured correctly.
   if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET || !env.R2_PUBLIC_URL) {
     const errorMsg = 'SERVER MISCONFIGURATION: One or more required environment variables are missing.';
     console.error(errorMsg);
@@ -32,6 +33,7 @@ export async function onRequest(context) {
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
+      // Read the 'prompt' and 'image' sent by the frontend
       const prompt = formData.get('prompt');
       const imageFile = formData.get('image');
 
@@ -41,22 +43,27 @@ export async function onRequest(context) {
       await env.IMAGE_BUCKET.put(key, imageFile.stream(), {
         httpMetadata: { contentType: imageFile.type },
       });
-      
       const imageUrlForRunway = `${env.R2_PUBLIC_URL}/${key}`;
       
-      const gen2ModelId = 'a711833c-2195-4760-a292-421712a23059';
+      // --- THE POSTMAN FIX: Build the payload with the EXACT keys from your test ---
       const payload = {
-        modelId: gen2ModelId,
-        input: { prompt, image: imageUrlForRunway },
+        model: "gen3a_turbo",
+        promptText: prompt, // Use 'promptText' key
+        promptImage: imageUrlForRunway, // Use 'promptImage' key
+        duration: 5,
+        ratio: "1280:768"
       };
+
+      console.log("Sending payload that replicates Postman:", JSON.stringify(payload));
       
-      const response = await fetch('https://api.dev.runwayml.com/v1/inference-jobs', {
+      // --- THE POSTMAN FIX: Use the v1 endpoint that accepts this payload ---
+      const response = await fetch('https://api.dev.runwayml.com/v1/image_to_video', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
           'Content-Type': 'application/json',
-          // --- THE FINAL TEST: Using a different, older version date ---
-          'X-Runway-Version': '2023-11-01', 
+          // --- THE POSTMAN FIX: Use the EXACT version date from your test ---
+          'X-Runway-Version': '2024-11-06', 
         },
         body: JSON.stringify(payload),
       });
@@ -64,22 +71,26 @@ export async function onRequest(context) {
       const data = await response.json();
       if (!response.ok) throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
 
-      return new Response(JSON.stringify({ success: true, taskId: data.id }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ success: true, taskId: data.id, status: data.status }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
-    // ... status check logic
+    // ... status check logic must also be consistent
     else if (contentType.includes('application/json')) {
       const body = await request.json();
       const { taskId, action } = body;
       if (action !== 'status' || !taskId) throw new Error('Invalid JSON request');
       const statusResponse = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
         method: 'GET',
-        headers: { 'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`, 'X-Runway-Version': '2023-11-01' },
+        headers: {
+          'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
+          'X-Runway-Version': '2024-11-06',
+        },
       });
       const data = await statusResponse.json();
       if (!statusResponse.ok) throw new Error(`Status check failed: ${JSON.stringify(data)}`);
       return new Response(JSON.stringify({
-        success: true, status: data.status, progress: data.progress_normalized || 0,
-        videoUrl: data.output?.video_url || null, failure: data.failure || null,
+        success: true, status: data.status, progress: data.progress, // This endpoint gives 'progress'
+        videoUrl: data.output?.[0] || null, // This endpoint gives output as an array
+        failure: data.failure || null,
       }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     } else {
       throw new Error(`Invalid Content-Type.`);
