@@ -20,8 +20,8 @@ export async function onRequest(context) {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET) {
-    const errorMsg = 'SERVER MISCONFIGURATION: API key or R2 bucket binding is missing.';
+  if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET || !env.IMAGE_BUCKET.publicUrl) {
+    const errorMsg = 'SERVER MISCONFIGURATION: API key or R2 bucket binding is missing/incorrect. The R2 public URL is undefined.';
     console.error(errorMsg);
     return new Response(JSON.stringify({ success: false, error: errorMsg }), { status: 500 });
   }
@@ -29,7 +29,6 @@ export async function onRequest(context) {
   try {
     const contentType = request.headers.get('content-type') || '';
 
-    // --- A. HANDLE IMAGE UPLOAD & VIDEO GENERATION ---
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
       const prompt = formData.get('prompt');
@@ -48,8 +47,6 @@ export async function onRequest(context) {
         modelId: gen2ModelId,
         input: { prompt, image: imageUrlForRunway },
       };
-
-      console.log("Sending payload to Gen-2:", JSON.stringify(payload));
       
       const response = await fetch('https://api.dev.runwayml.com/v1/inference-jobs', {
         method: 'POST',
@@ -62,17 +59,10 @@ export async function onRequest(context) {
       });
 
       const data = await response.json();
-      if (!response.ok) {
-        console.error('RunwayML API Error:', response.status, data);
-        throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
-      }
+      if (!response.ok) throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
 
-      return new Response(JSON.stringify({ success: true, taskId: data.id }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+      return new Response(JSON.stringify({ success: true, taskId: data.id }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
-
-    // --- B. HANDLE TASK STATUS CHECK ---
     else if (contentType.includes('application/json')) {
       const body = await request.json();
       const { taskId, action } = body;
@@ -96,13 +86,10 @@ export async function onRequest(context) {
         progress: data.progress_normalized || 0,
         videoUrl: data.output?.video_url || null,
         failure: data.failure || null,
-      }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+      }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     } else {
       throw new Error(`Invalid Content-Type.`);
     }
-
   } catch (error) {
     console.error('Error in Cloudflare Worker:', error.message);
     return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500 });
