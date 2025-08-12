@@ -1,5 +1,5 @@
 // --- START OF FILE functions/ai.js (Final Hardcode Bypass Version 8.0) ---
-// 16.21 -2025-08-12
+// 17.21 -2025-08-12
 export async function onRequest(context) {
   // --- This log confirms the final bypass version is running ---
   console.log("--- RUNNING AI.JS VERSION 8.0 (Hardcode Bypass) ---"); 
