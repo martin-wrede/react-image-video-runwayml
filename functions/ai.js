@@ -1,10 +1,13 @@
-// --- START OF FILE functions/ai.js (Final Bypass Version 6.0) ---
-
+// --- START OF FILE functions/ai.js (Final Hardcode Bypass Version 8.0) ---
+// 16.21 -2025-08-12
 export async function onRequest(context) {
-  // --- This log confirms this new bypass version is running ---
-  console.log("--- RUNNING AI.JS VERSION 6.0 (Bypass with R2_PUBLIC_URL) ---"); 
+  // --- This log confirms the final bypass version is running ---
+  console.log("--- RUNNING AI.JS VERSION 8.0 (Hardcode Bypass) ---"); 
 
   const { request, env } = context;
+
+  // --- We are now HARDCODING the URL. This bypasses the settings UI bug. ---
+  const R2_PUBLIC_URL = "https://pub-2e08632872a645f89f91aad5f2904c70.r2.dev";
 
   if (request.method === 'OPTIONS') {
     return new Response(null, {
@@ -20,9 +23,9 @@ export async function onRequest(context) {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  // --- NEW, SIMPLER CHECK: We now look for our new variable ---
-  if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET || !env.R2_PUBLIC_URL) {
-    const errorMsg = 'SERVER MISCONFIGURATION: One or more required environment variables (RUNWAYML_API_KEY, R2_PUBLIC_URL) or the IMAGE_BUCKET binding is missing.';
+  // The safety check no longer needs to check for the URL variable.
+  if (!env.RUNWAYML_API_KEY || !env.IMAGE_BUCKET) {
+    const errorMsg = 'SERVER MISCONFIGURATION: The RUNWAYML_API_KEY or the IMAGE_BUCKET binding is missing.';
     console.error(errorMsg);
     return new Response(JSON.stringify({ success: false, error: errorMsg }), { status: 500 });
   }
@@ -42,9 +45,9 @@ export async function onRequest(context) {
         httpMetadata: { contentType: imageFile.type },
       });
       
-      // --- THE BYPASS: We construct the URL manually from our new variable ---
-      const imageUrlForRunway = `${env.R2_PUBLIC_URL}/${key}`;
-      console.log("Constructed image URL:", imageUrlForRunway);
+      // --- THE BYPASS: We construct the URL from our hardcoded const ---
+      const imageUrlForRunway = `${R2_PUBLIC_URL}/${key}`;
+      console.log("Hardcoded image URL:", imageUrlForRunway);
 
       const gen2ModelId = 'a711833c-2195-4760-a292-421712a23059';
       const payload = {
