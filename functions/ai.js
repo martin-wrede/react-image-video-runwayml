@@ -1,16 +1,21 @@
-// --- FINAL PRODUCTION SERVER TEST ---
-// This version uses the standard production API server, not the dev one.
-// 17.20 
+// --- FINAL CORRECT VERSION ---
+// This version uses the required DEV server AND the required version HEADER.
 
 export async function onRequest(context) {
-  // --- This log confirms the final test version is running ---
-  console.log("--- RUNNING FINAL PRODUCTION SERVER TEST (api.runwayml.com) ---"); 
+  // --- This log confirms this final correct version is running ---
+  console.log("--- RUNNING FINAL CORRECT AI.JS VERSION (Dev Host + Header) ---"); 
 
   const { request, env } = context;
 
   // Handles CORS preflight requests
   if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*' } });
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Runway-Version',
+      }
+    });
   }
   
   if (request.method !== 'POST') {
@@ -39,20 +44,19 @@ export async function onRequest(context) {
       await env.IMAGE_BUCKET.put(key, imageFile.stream(), { httpMetadata: { contentType: imageFile.type } });
       const imageUrlForRunway = `${env.R2_PUBLIC_URL}/${key}`;
       
-      // Use the stable Gen-2 model ID
       const gen2ModelId = 'a711833c-2195-4760-a292-421712a23059';
       const payload = {
         modelId: gen2ModelId,
         input: { prompt, image: imageUrlForRunway },
       };
       
-      // --- THE FIX: Point to the standard PRODUCTION API server ---
-      const response = await fetch('https://api.runwayml.com/v1/inference-jobs', {
+      // Using the DEV server with the VERSION HEADER
+      const response = await fetch('https://api.dev.runwayml.com/v1/inference-jobs', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
           'Content-Type': 'application/json',
-          // The production v1 endpoint does NOT use the X-Runway-Version header
+          'X-Runway-Version': '2024-05-15', 
         },
         body: JSON.stringify(payload),
       });
@@ -70,11 +74,12 @@ export async function onRequest(context) {
 
       if (action !== 'status' || !taskId) throw new Error('Invalid status check request.');
       
-      // --- THE FIX: Point to the standard PRODUCTION API server ---
-      const statusResponse = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, {
+      // Using the DEV server with the VERSION HEADER
+      const statusResponse = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
+          'X-Runway-Version': '2024-05-15',
         },
       });
 
