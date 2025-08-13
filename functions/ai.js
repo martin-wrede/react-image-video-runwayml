@@ -1,50 +1,177 @@
-// --- Production-Ready Code for a NEW API Key ---
-
 export async function onRequest(context) {
   const { request, env } = context;
+  
+  // Handle CORS
   if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*' } });
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      }
+    });
   }
+
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
-  if (!env.RUNWAYML_API_KEY || !env.R2_PUBLIC_URL || !env.IMAGE_BUCKET) {
-    const errorMsg = 'CRITICAL FIX REQUIRED: Check Cloudflare project settings.';
-    return new Response(JSON.stringify({ success: false, error: errorMsg }), { status: 500 });
-  }
+
   try {
-    const contentType = request.headers.get('content-type') || '';
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await request.formData();
-      const prompt = formData.get('prompt');
-      const imageFile = formData.get('image');
-      const key = `uploads/${Date.now()}-${imageFile.name}`;
-      await env.IMAGE_BUCKET.put(key, imageFile.stream(), { httpMetadata: { contentType: imageFile.type } });
-      const imageUrlForRunway = `${env.R2_PUBLIC_URL}/${key}`;
-      const payload = { modelId: 'a711833c-2195-4760-a292-421712a23059', input: { prompt, image: imageUrlForRunway } };
+    const body = await request.json();
+    const { prompt, action, taskId } = body;
+
+    if (action === 'generate') {
+      // Updated request configurations with correct API structure
+      const requestConfigs = [
+        {
+          name: 'Gen3 Alpha Turbo',
+          body: {
+            model: 'gen3a_turbo',
+            promptText: prompt || 'A cinematic shot with smooth camera movement',
+            promptImage: 'https://martin-wrede.github.io/targetx-website/Home-03.jpg',
+            seed: Math.floor(Math.random() * 4294967295),
+            watermark: false,
+            duration: 5,
+            ratio: '1280:768'
+          }
+        }
+        
+      ];
+
+      let lastError = null;
       
-      // Using the standard PRODUCTION server
-      const response = await fetch('https://api.runwayml.com/v1/inference-jobs', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(`Runway API Error: ${JSON.stringify(data)}`);
-      return new Response(JSON.stringify({ success: true, taskId: data.id }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      for (const config of requestConfigs) {
+        try {
+          console.log(`Trying ${config.name} with body:`, JSON.stringify(config.body, null, 2));
+          
+          // Try production API first, then dev API
+          const apiUrls = [
+            'https://api.runwayml.com/v1/image_to_video',
+            'https://api.dev.runwayml.com/v1/image_to_video'
+          ];
+          
+          for (const apiUrl of apiUrls) {
+            try {
+              const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
+                  'X-Runway-Version': '2024-11-06',
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config.body),
+              });
+
+              const data = await response.json();
+              console.log(`${config.name} response from ${apiUrl}:`, response.status, data);
+              
+              if (response.ok) {
+                // Success! Return the result
+                return new Response(JSON.stringify({
+                  success: true,
+                  taskId: data.id,
+                  status: data.status,
+                  config: config.name,
+                  apiUrl: apiUrl
+                }), {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                  }
+                });
+              } else {
+                lastError = { 
+                  config: config.name, 
+                  apiUrl: apiUrl,
+                  status: response.status, 
+                  data: data,
+                  headers: Object.fromEntries(response.headers.entries())
+                };
+              }
+            } catch (fetchError) {
+              lastError = { 
+                config: config.name, 
+                apiUrl: apiUrl,
+                error: fetchError.message 
+              };
+              console.error(`${config.name} failed for ${apiUrl}:`, fetchError);
+            }
+          }
+        } catch (error) {
+          lastError = { config: config.name, error: error.message };
+          console.error(`${config.name} failed:`, error);
+        }
+      }
+
+      // If we get here, all configs failed
+      throw new Error(`All configurations failed. Last error: ${JSON.stringify(lastError, null, 2)}`);
+
+    } else if (action === 'status') {
+      // Check task status - try both API endpoints
+      const apiUrls = [
+        'https://api.runwayml.com/v1/tasks',
+        'https://api.dev.runwayml.com/v1/tasks'
+      ];
+      
+      for (const baseUrl of apiUrls) {
+        try {
+          const response = await fetch(`${baseUrl}/${taskId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
+              'X-Runway-Version': '2024-11-06',
+            },
+          });
+
+          const data = await response.json();
+          
+          if (response.ok) {
+            return new Response(JSON.stringify({
+              success: true,
+              status: data.status,
+              progress: data.progress,
+              videoUrl: data.output?.[0] || null,
+              failure: data.failure || null,
+              apiUrl: baseUrl
+            }), {
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+              }
+            });
+          } else {
+            console.error(`Status check failed for ${baseUrl}:`, response.status, data);
+          }
+        } catch (error) {
+          console.error(`Status check error for ${baseUrl}:`, error);
+        }
+      }
+      
+      throw new Error(`Failed to check task status for task ID: ${taskId}`);
     }
-    else if (contentType.includes('application/json')) {
-      const { taskId, action } = await request.json();
-      const statusResponse = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, { headers: { 'Authorization': `Bearer ${env.RUNWAYML_API_KEY}` } });
-      const data = await statusResponse.json();
-      if (!statusResponse.ok) throw new Error(`Status check failed: ${JSON.stringify(data)}`);
-      return new Response(JSON.stringify({
-        success: true, status: data.status, progress: data.progress_normalized || 0,
-        videoUrl: data.output?.video_url || null, failure: data.failure || null,
-      }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-    }
-    else { throw new Error(`Invalid request content-type.`); }
+
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Invalid action'
+    }), {
+      status: 400,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      }
+    });
+
   } catch (error) {
-    return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500 });
+    console.error('Error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      }
+    });
   }
 }
