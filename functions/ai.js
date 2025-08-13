@@ -1,6 +1,6 @@
-// --- FINAL CORRECT VERSION ---
+// --- FINAL CORRECT VERSION (v7.0) ---
 // This version uses the required DEV server AND the required version HEADER.
-
+// 16.36
 export async function onRequest(context) {
   // --- This log confirms this final correct version is running ---
   console.log("--- RUNNING FINAL CORRECT AI.JS VERSION (Dev Host + Header) ---"); 
@@ -50,12 +50,13 @@ export async function onRequest(context) {
         input: { prompt, image: imageUrlForRunway },
       };
       
-      // Using the DEV server with the VERSION HEADER
+      // RULE #1: Using the DEV server
       const response = await fetch('https://api.dev.runwayml.com/v1/inference-jobs', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
           'Content-Type': 'application/json',
+          // RULE #2: Using the VERSION HEADER
           'X-Runway-Version': '2024-05-15', 
         },
         body: JSON.stringify(payload),
@@ -74,11 +75,12 @@ export async function onRequest(context) {
 
       if (action !== 'status' || !taskId) throw new Error('Invalid status check request.');
       
-      // Using the DEV server with the VERSION HEADER
+      // RULE #1: Using the DEV server
       const statusResponse = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${env.RUNWAYML_API_KEY}`,
+          // RULE #2: Using the VERSION HEADER
           'X-Runway-Version': '2024-05-15',
         },
       });
